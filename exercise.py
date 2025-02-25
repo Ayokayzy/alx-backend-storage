@@ -6,6 +6,19 @@ exercise.py
 import redis
 import uuid
 from typing import Union, Optional, Callable
+from functools import wraps
+
+
+def count_calls(method: Callable) -> Callable:
+    """
+    a system to count how many times methods of the Cache class are called.
+    """
+    @wraps(callable)
+    def wrapper(self, *argc, **argv):
+        key = callable.__qualname__
+        self._redis.incr(key)
+        return method(self, *argc, **argv)
+    return wrapper
 
 
 class Cache:
@@ -17,6 +30,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         rand_key = str(uuid.uuid4())
         self._redis.set(rand_key, data)
